@@ -17,9 +17,8 @@ const CONFIG = {
 那天阳光正好，风也温柔，我在人群中一眼就看到了你。
 世界突然安静下来，只剩下心跳的声音。`,
         photos: [
-            { file: "photos/act1/1.jpg", caption: "初次相遇" },
-            { file: "photos/act1/2.jpg", caption: "第一次微笑" },
-            { file: "photos/act1/3.jpg", caption: "心动瞬间" },
+            { file: "photos/act1/1.jpeg", caption: "初次相遇" },
+            // 还没上传的照片会显示占位符，上传后改这里
         ],
     },
 
@@ -30,7 +29,7 @@ const CONFIG = {
         story: `日子一天天过去，我越来越了解你——你笑起来的样子，
 你生气时微微嘟起的嘴，你认真工作时专注的眼神。
 每一个细节，都让我更加确定：你就是我要找的那个人。`,
-        photo: { file: "photos/act2/1.jpg", caption: "渐渐熟悉的日子" },
+        photo: { file: "photos/act2/1.jpeg", caption: "渐渐熟悉的日子" },
         loveLetter: `我曾以为一个人也能把日子过好，直到遇见你才懂，两个人的并肩，才是人生最温柔的完整。`,
     },
 
@@ -44,9 +43,8 @@ const CONFIG = {
         endingStory: `我们已经一起走过了六年，未来还有很多个六年要走。
 下一站，苏州。不管未来会发生什么，只要身边是你，就什么都不怕。`,
         photos: [
+            // 还没上传，上传后改这里
             { file: "photos/act3/1.jpg", caption: "我们的小日子" },
-            { file: "photos/act3/2.jpg", caption: "一起看海" },
-            { file: "photos/act3/3.jpg", caption: "日常小幸福" },
         ],
     },
 
