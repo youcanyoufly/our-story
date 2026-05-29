@@ -369,7 +369,7 @@
                 headers: { 'Authorization': `token ${token}` }
             });
             const data = await res.json();
-            const content = atob(data.content);
+            const content = decodeURIComponent(escape(atob(data.content)));
             // 提取 CONFIG 对象并解析
             const match = content.match(/const CONFIG\s*=\s*(\{[\s\S]*\});/);
             if (match) {
