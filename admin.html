@@ -413,8 +413,29 @@
         document.getElementById('finalMessage').value = c.ending?.finalMessage || '';
     }
 
-    // ===== 照片上传 =====
+    // ===== 照片上传（自动转为 jpg） =====
     const uploadedPhotos = { act1: [], act2: [], act3: [], special: [] };
+
+    function convertToJpg(file) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob((blob) => {
+                        resolve(blob);
+                    }, 'image/jpeg', 0.9);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 
     async function handleUpload(section, files) {
         const token = getToken();
@@ -423,12 +444,17 @@
         for (const file of files) {
             showStatus(`上传中: ${file.name}...`, 'loading');
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const base64 = e.target.result.split(',')[1];
-                const ext = file.name.split('.').pop();
+            try {
+                // 所有格式统一转为 jpg
+                const blob = await convertToJpg(file);
+                const base64 = await new Promise((res) => {
+                    const r = new FileReader();
+                    r.onload = (e) => res(e.target.result.split(',')[1]);
+                    r.readAsDataURL(blob);
+                });
+
                 const idx = uploadedPhotos[section].length + 1;
-                const filename = `${idx}.${ext}`;
+                const filename = `${idx}.jpg`;
                 const path = `photos/${section}/${filename}`;
 
                 try {
@@ -455,8 +481,9 @@
                 } catch (err) {
                     showStatus(`❌ ${file.name} 上传失败`, 'error');
                 }
-            };
-            reader.readAsDataURL(file);
+            } catch (err) {
+                showStatus(`❌ ${file.name} 转换失败`, 'error');
+            }
         }
     }
 
