@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 我们的故事</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a2e; color: #e0e0e0; min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+
+        h1 {
+            text-align: center; font-size: 1.4rem;
+            color: #e8a0bf; margin-bottom: 30px;
+            padding-bottom: 15px; border-bottom: 1px solid #333;
+        }
+
+        /* 令牌输入 */
+        .token-section {
+            background: #16213e; border-radius: 12px;
+            padding: 20px; margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .token-section h2 { font-size: 0.9rem; color: #888; margin-bottom: 10px; }
+        .token-section input {
+            width: 100%; padding: 10px; background: #0f3460;
+            border: 1px solid #444; border-radius: 8px;
+            color: #fff; font-size: 0.9rem;
+        }
+        .token-section .hint {
+            font-size: 0.75rem; color: #666; margin-top: 8px; line-height: 1.5;
+        }
+        .token-section .hint a { color: #e8a0bf; }
+        .token-status {
+            margin-top: 8px; font-size: 0.85rem; padding: 6px 10px;
+            border-radius: 6px; display: none;
+        }
+        .token-status.ok { display: block; background: #1b4332; color: #95d5b2; }
+        .token-status.err { display: block; background: #3d0000; color: #ff6b6b; }
+
+        /* 章节卡片 */
+        .section-card {
+            background: #16213e; border-radius: 12px;
+            padding: 20px; margin-bottom: 16px;
+            border: 1px solid #333;
+        }
+        .section-card h3 {
+            font-size: 1rem; color: #e8a0bf;
+            margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
+        }
+        .section-card h3 .badge {
+            font-size: 0.7rem; background: #e8a0bf; color: #1a1a2e;
+            padding: 2px 8px; border-radius: 10px;
+        }
+
+        /* 文字编辑 */
+        .field { margin-bottom: 14px; }
+        .field label {
+            display: block; font-size: 0.8rem; color: #888;
+            margin-bottom: 4px;
+        }
+        .field input, .field textarea {
+            width: 100%; padding: 10px; background: #0f3460;
+            border: 1px solid #444; border-radius: 8px;
+            color: #fff; font-size: 0.9rem; font-family: inherit;
+        }
+        .field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+        /* 照片上传 */
+        .photo-upload {
+            border: 2px dashed #444; border-radius: 10px;
+            padding: 20px; text-align: center;
+            cursor: pointer; transition: all 0.3s;
+            margin-top: 10px; position: relative;
+        }
+        .photo-upload:hover { border-color: #e8a0bf; background: rgba(232,160,191,0.05); }
+        .photo-upload input {
+            position: absolute; inset: 0; opacity: 0; cursor: pointer;
+        }
+        .photo-upload .icon { font-size: 2rem; margin-bottom: 8px; }
+        .photo-upload .text { font-size: 0.85rem; color: #888; }
+
+        /* 照片预览 */
+        .photo-list {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px;
+        }
+        .photo-item {
+            width: 80px; height: 80px; border-radius: 8px;
+            overflow: hidden; position: relative;
+            border: 2px solid #333;
+        }
+        .photo-item img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .photo-item .del-btn {
+            position: absolute; top: 2px; right: 2px;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: rgba(255,0,0,0.7); color: #fff;
+            border: none; font-size: 0.7rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .photo-item .caption-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.7); color: #e8a0bf;
+            font-size: 0.6rem; padding: 2px 4px;
+            text-align: center; overflow: hidden;
+            white-space: nowrap; text-overflow: ellipsis;
+        }
+
+        /* 按钮 */
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; margin-top: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #e8a0bf, #c084fc);
+            color: #fff;
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(232,160,191,0.3); }
+        .btn-primary:disabled {
+            background: #333; color: #666; cursor: not-allowed;
+            transform: none; box-shadow: none;
+        }
+        .btn-preview {
+            background: #0f3460; color: #e8a0bf;
+            border: 1px solid #e8a0bf;
+        }
+
+        /* 状态 */
+        .status {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            padding: 10px 24px; border-radius: 8px;
+            font-size: 0.85rem; z-index: 1000;
+            opacity: 0; transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .status.show { opacity: 1; }
+        .status.success { background: #1b4332; color: #95d5b2; }
+        .status.error { background: #3d0000; color: #ff6b6b; }
+        .status.loading { background: #16213e; color: #e8a0bf; }
+
+        /* 预览按钮 */
+        .preview-link {
+            display: block; text-align: center; margin-top: 16px;
+            color: #e8a0bf; text-decoration: none; font-size: 0.9rem;
+        }
+
+        @media (max-width: 500px) {
+            body { padding: 12px; }
+            .section-card { padding: 14px; }
+            .photo-item { width: 60px; height: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎬 管理后台</h1>
+
+        <!-- GitHub Token -->
+        <div class="token-section">
+            <h2>🔑 GitHub Token</h2>
+            <input type="password" id="tokenInput" placeholder="粘贴你的 Personal Access Token">
+            <div class="token-status" id="tokenStatus"></div>
+            <div class="hint">
+                获取 Token：<a href="https://github.com/settings/tokens/new?scopes=repo&note=our-story" target="_blank">点击这里</a><br>
+                勾选 <strong>repo</strong> 权限 → Generate token → 复制粘贴到这里
+            </div>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="section-card">
+            <h3>📝 基本信息</h3>
+            <div class="field">
+                <label>他的名字</label>
+                <input type="text" id="hisName">
+            </div>
+            <div class="field">
+                <label>她的名字</label>
+                <input type="text" id="herName">
+            </div>
+            <div class="field">
+                <label>在一起的日期</label>
+                <input type="text" id="togetherDate" placeholder="2019 . 06 . 15">
+            </div>
+        </div>
+
+        <!-- 第一幕 -->
+        <div class="section-card">
+            <h3>🎬 第一幕：相遇 <span class="badge">ACT I</span></h3>
+            <div class="field">
+                <label>标题</label>
+                <input type="text" id="act1Title">
+            </div>
+            <div class="field">
+                <label>日期</label>
+                <input type="text" id="act1Date">
+            </div>
+            <div class="field">
+                <label>故事</label>
+                <textarea id="act1Story"></textarea>
+            </div>
+            <div class="field">
+                <label>照片（胶片条）</label>
+                <div class="photo-upload" id="act1Upload">
+                    <input type="file" accept="image/*" multiple onchange="handleUpload('act1', this.files)">
+                    <div class="icon">📷</div>
+                    <div class="text">点击或拖拽上传照片</div>
+                </div>
+                <div class="photo-list" id="act1Photos"></div>
+            </div>
+            <div class="field">
+                <label>照片说明（每行一个，对应上面的照片）</label>
+                <textarea id="act1Captions" placeholder="初次相遇&#10;第一次微笑&#10;心动瞬间"></textarea>
+            </div>
+        </div>
+
+        <!-- 第二幕 -->
+        <div class="section-card">
+            <h3>🎬 第二幕：相知 <span class="badge">ACT II</span></h3>
+            <div class="field">
+                <label>标题</label>
+                <input type="text" id="act2Title">
+            </div>
+            <div class="field">
+                <label>日期</label>
+                <input type="text" id="act2Date">
+            </div>
+            <div class="field">
+                <label>故事</label>
+                <textarea id="act2Story"></textarea>
+            </div>
+            <div class="field">
+                <label>大照片（黑白变彩色）</label>
+                <div class="photo-upload" id="act2Upload">
+                    <input type="file" accept="image/*" onchange="handleUpload('act2', this.files)">
+                    <div class="icon">📷</div>
+                    <div class="text">点击上传照片</div>
+                </div>
+                <div class="photo-list" id="act2Photos"></div>
+            </div>
+            <div class="field">
+                <label>照片说明</label>
+                <input type="text" id="act2Caption">
+            </div>
+            <div class="field">
+                <label>情话（打字机效果）</label>
+                <textarea id="act2Letter"></textarea>
+            </div>
+        </div>
+
+        <!-- 第三幕 -->
+        <div class="section-card">
+            <h3>🎬 第三幕：相守 <span class="badge">ACT III</span></h3>
+            <div class="field">
+                <label>标题</label>
+                <input type="text" id="act3Title">
+            </div>
+            <div class="field">
+                <label>日期</label>
+                <input type="text" id="act3Date">
+            </div>
+            <div class="field">
+                <label>故事</label>
+                <textarea id="act3Story"></textarea>
+            </div>
+            <div class="field">
+                <label>结尾故事</label>
+                <textarea id="act3Ending"></textarea>
+            </div>
+            <div class="field">
+                <label>照片（胶片条）</label>
+                <div class="photo-upload" id="act3Upload">
+                    <input type="file" accept="image/*" multiple onchange="handleUpload('act3', this.files)">
+                    <div class="icon">📷</div>
+                    <div class="text">点击或拖拽上传照片</div>
+                </div>
+                <div class="photo-list" id="act3Photos"></div>
+            </div>
+            <div class="field">
+                <label>照片说明（每行一个）</label>
+                <textarea id="act3Captions" placeholder="我们的小窝&#10;一起看海&#10;日常小幸福"></textarea>
+            </div>
+        </div>
+
+        <!-- 片尾 -->
+        <div class="section-card">
+            <h3>🎬 片尾 <span class="badge">ENDING</span></h3>
+            <div class="field">
+                <label>最后的大照片</label>
+                <div class="photo-upload" id="specialUpload">
+                    <input type="file" accept="image/*" onchange="handleUpload('special', this.files)">
+                    <div class="icon">📷</div>
+                    <div class="text">点击上传照片</div>
+                </div>
+                <div class="photo-list" id="specialPhotos"></div>
+            </div>
+            <div class="field">
+                <label>照片说明</label>
+                <input type="text" id="specialCaption">
+            </div>
+            <div class="field">
+                <label>最终祝福语</label>
+                <input type="text" id="finalMessage">
+            </div>
+        </div>
+
+        <!-- 提交 -->
+        <button class="btn btn-primary" id="submitBtn" onclick="submitAll()">
+            🚀 发布到网站
+        </button>
+        <a class="preview-link" href="index.html" target="_blank">👁 预览页面</a>
+    </div>
+
+    <!-- 状态提示 -->
+    <div class="status" id="status"></div>
+
+    <script>
+    const REPO = 'youcanyoufly/our-story';
+    const BRANCH = 'main';
+
+    // ===== Token =====
+    const tokenInput = document.getElementById('tokenInput');
+    const savedToken = localStorage.getItem('gh_token');
+    if (savedToken) {
+        tokenInput.value = savedToken;
+        verifyToken(savedToken);
+    }
+    tokenInput.addEventListener('change', () => {
+        const t = tokenInput.value.trim();
+        if (t) {
+            localStorage.setItem('gh_token', t);
+            verifyToken(t);
+        }
+    });
+
+    async function verifyToken(token) {
+        const el = document.getElementById('tokenStatus');
+        try {
+            const res = await fetch(`https://api.github.com/repos/${REPO}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (res.ok) {
+                el.className = 'token-status ok';
+                el.textContent = '✅ Token 有效';
+                loadCurrentConfig();
+            } else {
+                el.className = 'token-status err';
+                el.textContent = '❌ Token 无效或无权限';
+            }
+        } catch {
+            el.className = 'token-status err';
+            el.textContent = '❌ 网络错误';
+        }
+    }
+
+    // ===== 加载当前配置 =====
+    async function loadCurrentConfig() {
+        const token = getToken();
+        if (!token) return;
+
+        try {
+            const res = await fetch(`https://api.github.com/repos/${REPO}/contents/config.js?ref=${BRANCH}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            const data = await res.json();
+            const content = atob(data.content);
+            // 提取 CONFIG 对象并解析
+            const match = content.match(/const CONFIG\s*=\s*(\{[\s\S]*\});/);
+            if (match) {
+                const cfg = eval('(' + match[1] + ')');
+                fillForm(cfg);
+            }
+        } catch (e) {
+            console.log('加载配置失败', e);
+        }
+
+        // 加载照片列表
+        loadPhotoList('act1');
+        loadPhotoList('act2');
+        loadPhotoList('act3');
+        loadPhotoList('special');
+    }
+
+    function fillForm(c) {
+        document.getElementById('hisName').value = c.hisName || '';
+        document.getElementById('herName').value = c.herName || '';
+        document.getElementById('togetherDate').value = c.togetherDate || '';
+
+        document.getElementById('act1Title').value = c.act1?.title || '';
+        document.getElementById('act1Date').value = c.act1?.date || '';
+        document.getElementById('act1Story').value = c.act1?.story || '';
+        document.getElementById('act1Captions').value = (c.act1?.photos || []).map(p => p.caption).join('\n');
+
+        document.getElementById('act2Title').value = c.act2?.title || '';
+        document.getElementById('act2Date').value = c.act2?.date || '';
+        document.getElementById('act2Story').value = c.act2?.story || '';
+        document.getElementById('act2Caption').value = c.act2?.photo?.caption || '';
+        document.getElementById('act2Letter').value = c.act2?.loveLetter || '';
+
+        document.getElementById('act3Title').value = c.act3?.title || '';
+        document.getElementById('act3Date').value = c.act3?.date || '';
+        document.getElementById('act3Story').value = c.act3?.story || '';
+        document.getElementById('act3Ending').value = c.act3?.endingStory || '';
+        document.getElementById('act3Captions').value = (c.act3?.photos || []).map(p => p.caption).join('\n');
+
+        document.getElementById('specialCaption').value = c.ending?.photo?.caption || '';
+        document.getElementById('finalMessage').value = c.ending?.finalMessage || '';
+    }
+
+    // ===== 照片上传 =====
+    const uploadedPhotos = { act1: [], act2: [], act3: [], special: [] };
+
+    async function handleUpload(section, files) {
+        const token = getToken();
+        if (!token) { showStatus('请先填写 Token', 'error'); return; }
+
+        for (const file of files) {
+            showStatus(`上传中: ${file.name}...`, 'loading');
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result.split(',')[1];
+                const ext = file.name.split('.').pop();
+                const idx = uploadedPhotos[section].length + 1;
+                const filename = `${idx}.${ext}`;
+                const path = `photos/${section}/${filename}`;
+
+                try {
+                    await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `上传照片: ${section}/${filename}`,
+                            content: base64,
+                            branch: BRANCH
+                        })
+                    });
+
+                    uploadedPhotos[section].push({
+                        file: `photos/${section}/${filename}`,
+                        name: filename
+                    });
+
+                    renderPhotoList(section);
+                    showStatus(`✅ ${file.name} 上传成功`, 'success');
+                } catch (err) {
+                    showStatus(`❌ ${file.name} 上传失败`, 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function loadPhotoList(section) {
+        const token = getToken();
+        if (!token) return;
+
+        try {
+            const res = await fetch(`https://api.github.com/repos/${REPO}/contents/photos/${section}?ref=${BRANCH}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (res.ok) {
+                const files = await res.json();
+                uploadedPhotos[section] = files
+                    .filter(f => /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name))
+                    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+                    .map(f => ({
+                        file: `photos/${section}/${f.name}`,
+                        name: f.name,
+                        sha: f.sha
+                    }));
+                renderPhotoList(section);
+            }
+        } catch {}
+    }
+
+    function renderPhotoList(section) {
+        const el = document.getElementById(`${section}Photos`);
+        el.innerHTML = uploadedPhotos[section].map((p, i) => `
+            <div class="photo-item">
+                <img src="https://raw.githubusercontent.com/${REPO}/${BRANCH}/${p.file}" alt="">
+                <button class="del-btn" onclick="deletePhoto('${section}', ${i})">✕</button>
+                <div class="caption-overlay">${p.name}</div>
+            </div>
+        `).join('');
+    }
+
+    async function deletePhoto(section, index) {
+        if (!confirm('确定删除这张照片？')) return;
+
+        const token = getToken();
+        const photo = uploadedPhotos[section][index];
+
+        try {
+            // 需要先获取 sha
+            const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${photo.file}?ref=${BRANCH}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            const data = await res.json();
+
+            await fetch(`https://api.github.com/repos/${REPO}/contents/${photo.file}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `删除照片: ${photo.file}`,
+                    sha: data.sha,
+                    branch: BRANCH
+                })
+            });
+
+            uploadedPhotos[section].splice(index, 1);
+            renderPhotoList(section);
+            showStatus('✅ 照片已删除', 'success');
+        } catch {
+            showStatus('❌ 删除失败', 'error');
+        }
+    }
+
+    // ===== 提交所有更改 =====
+    async function submitAll() {
+        const token = getToken();
+        if (!token) { showStatus('请先填写 Token', 'error'); return; }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = '⏳ 提交中...';
+        showStatus('正在生成配置文件...', 'loading');
+
+        // 构建 config.js
+        const act1Photos = uploadedPhotos.act1.map((p, i) => {
+            const captions = document.getElementById('act1Captions').value.split('\n').filter(Boolean);
+            return `{ file: "${p.file}", caption: "${(captions[i] || p.name).replace(/"/g, '\\"')}" }`;
+        }).join(',\n            ');
+
+        const act3Photos = uploadedPhotos.act3.map((p, i) => {
+            const captions = document.getElementById('act3Captions').value.split('\n').filter(Boolean);
+            return `{ file: "${p.file}", caption: "${(captions[i] || p.name).replace(/"/g, '\\"')}" }`;
+        }).join(',\n            ');
+
+        const act2Photo = uploadedPhotos.act2[0]
+            ? `{ file: "${uploadedPhotos.act2[0].file}", caption: "${document.getElementById('act2Caption').value.replace(/"/g, '\\"')}" }`
+            : `{ file: "photos/act2/1.jpg", caption: "${document.getElementById('act2Caption').value.replace(/"/g, '\\"')}" }`;
+
+        const specialPhoto = uploadedPhotos.special[0]
+            ? `{ file: "${uploadedPhotos.special[0].file}", caption: "${document.getElementById('specialCaption').value.replace(/"/g, '\\"')}" }`
+            : `{ file: "photos/special/1.jpg", caption: "${document.getElementById('specialCaption').value.replace(/"/g, '\\"')}" }`;
+
+        const configContent = `// ============================================================
+//  我们的故事 - 配置文件
+//  由管理后台自动生成
+// ============================================================
+
+const CONFIG = {
+
+    // 开场
+    hisName: "${document.getElementById('hisName').value.replace(/"/g, '\\"')}",
+    herName: "${document.getElementById('herName').value.replace(/"/g, '\\"')}",
+    togetherDate: "${document.getElementById('togetherDate').value.replace(/"/g, '\\"')}",
+
+    // 第一幕：相遇
+    act1: {
+        title: "${document.getElementById('act1Title').value.replace(/"/g, '\\"')}",
+        date: "${document.getElementById('act1Date').value.replace(/"/g, '\\"')}",
+        story: \`${document.getElementById('act1Story').value}\`,
+        photos: [
+            ${act1Photos || '{ file: "photos/act1/1.jpg", caption: "初次相遇" }'}
+        ],
+    },
+
+    // 第二幕：相知
+    act2: {
+        title: "${document.getElementById('act2Title').value.replace(/"/g, '\\"')}",
+        date: "${document.getElementById('act2Date').value.replace(/"/g, '\\"')}",
+        story: \`${document.getElementById('act2Story').value}\`,
+        photo: ${act2Photo},
+        loveLetter: \`${document.getElementById('act2Letter').value}\`,
+    },
+
+    // 第三幕：相守
+    act3: {
+        title: "${document.getElementById('act3Title').value.replace(/"/g, '\\"')}",
+        date: "${document.getElementById('act3Date').value.replace(/"/g, '\\"')}",
+        story: \`${document.getElementById('act3Story').value}\`,
+        endingStory: \`${document.getElementById('act3Ending').value}\`,
+        photos: [
+            ${act3Photos || '{ file: "photos/act3/1.jpg", caption: "我们的小窝" }'}
+        ],
+    },
+
+    // 片尾
+    ending: {
+        photo: ${specialPhoto},
+        finalMessage: "${document.getElementById('finalMessage').value.replace(/"/g, '\\"')}",
+        credits: [
+            { role: "致",              name: "${document.getElementById('herName').value.replace(/"/g, '\\"')}" },
+            { role: "感谢",            name: "出现在我的生命里" },
+            { role: "编剧 / 导演",     name: "${document.getElementById('hisName').value.replace(/"/g, '\\"')}" },
+            { role: "领衔主演",        name: "${document.getElementById('hisName').value.replace(/"/g, '\\"')} & ${document.getElementById('herName').value.replace(/"/g, '\\"')}" },
+            { role: "上映日期",        name: "${document.getElementById('togetherDate').value.replace(/"/g, '\\"')}" },
+        ],
+    },
+};
+`;
+
+        try {
+            // 获取当前 config.js 的 sha
+            showStatus('正在提交配置...', 'loading');
+            const fileRes = await fetch(`https://api.github.com/repos/${REPO}/contents/config.js?ref=${BRANCH}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            const fileData = await fileRes.json();
+
+            // 提交
+            await fetch(`https://api.github.com/repos/${REPO}/contents/config.js`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: '更新配置 - 管理后台提交',
+                    content: btoa(unescape(encodeURIComponent(configContent))),
+                    sha: fileData.sha,
+                    branch: BRANCH
+                })
+            });
+
+            showStatus('✅ 发布成功！1-2分钟后生效', 'success');
+        } catch (err) {
+            showStatus('❌ 发布失败: ' + err.message, 'error');
+        }
+
+        btn.disabled = false;
+        btn.textContent = '🚀 发布到网站';
+    }
+
+    // ===== 工具函数 =====
+    function getToken() {
+        return tokenInput.value.trim();
+    }
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('status');
+        el.textContent = msg;
+        el.className = `status ${type} show`;
+        if (type !== 'loading') {
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+    }
+    </script>
+</body>
+</html>
